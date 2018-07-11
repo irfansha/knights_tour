@@ -14,65 +14,79 @@
 
 
 import sys
-
+import knight_moves
 N = int(sys.argv[1])
 
 visited = [0]*(N*N+1) # maintains if the vertex is visited
+
+islands = [-1]*(N*N+1)
 
 move_count = 0 # keeps track of number of moves made
 
 total_moves = N*N
 
-knight_moves = [[]]
+k_li = knight_moves.gen_knight_moves(N)
 
 
-#Generates a list of legal moves for the knight
+def place(move_count,visited,cur_move):
+	visited[cur_move] = 1
+	return move_count + 1
 
-def generate_legal_moves(x,y):
-	possible_pos = []
-	move_offsets = [(1, 2), (1, -2), (-1, 2), (-1, -2), (2, 1), (2, -1), (-2, 1), (-2, -1)]
-	for move in move_offsets:
-		new_x = x + move[0]
-		new_y = y + move[1]
+def remove(move_count,visited,cur_move):
+	visited[cur_move] = 0
+	return move_count - 1
 
-		if (new_x >= N):
-			continue
-		elif (new_x < 0):
-			continue
-		elif (new_y >= N):
-			continue
-		elif (new_y < 0):
-			continue
+def n_check(n):
+	temp = []
+	for next_nr in k_li[n]:
+		if islands[next_nr] != -1:
+			temp.append(next_nr)
+	return temp
+
+def reset(islands):
+	temp = sorted(islands)
+	for i in range(len(temp)):
+		if temp[i] != -1 :
+			new_i = islands.index(temp[i])
+			islands[new_i] = i
+
+def island_add(temp_islands,cur_move):
+	for nr in k_li[cur_move]:
+		temp = n_check(nr)
+		min_temp = max(temp_islands)
+		if temp == [] :
+			temp_islands[nr] = max(temp_islands) + 1
 		else:
-			possible_pos.append(N*new_x + new_y+1)
-			possible_pos.sort()
-	return possible_pos
+			for i in temp:
+				if islands[i] < min_temp :
+					min_temp = temp_islands[i]
+			for i in temp:
+				temp_islands[i] = min_temp
 
-for i in range(N):
-	for j in range(N):
-		knight_moves.append(generate_legal_moves(i,j))
+def island_del(temp_islands,cur_move):
+	temp_islands[cur_move] = -1
 
 
-def recur(cur_move,move_count,tour_count):
-	#print (visited)
-	if move_count < total_moves:
-		for move in knight_moves[cur_move]:
-			if visited[move] == 0:
-				#print (move)
-				move_count = move_count + 1
-				visited[move] = 1
-				tour_count = recur(move,move_count,tour_count)
-				move_count = move_count - 1
-				visited[move] = 0
+def recur(cur_move,island,move_count,tour_count):
+		print (islands)
+		if max(islands) > total_moves :
+			reset(islands)
+		move_count = place(move_count,visited,cur_move)
+		temp_islands = list(islands)
+		island_del(temp_islands,cur_move)
+		island_add(temp_islands,cur_move)
+		if move_count < total_moves:
+			for move in k_li[cur_move]:
+				if visited[move] == 0:
+					tour_count = recur(move,temp_islands,move_count,tour_count)
+		elif move_count == total_moves:
+			tour_count = tour_count + 1
+		move_count = remove(move_count,visited,cur_move)
+		return tour_count
 
-	elif move_count == total_moves:
-		tour_count = tour_count + 1
-		#print ("found one",tour_count)
-	return tour_count
+island = []
 
-for i in range(1,total_moves):
-	visited[i] = 1
-	tour_count = recur(i,1,0)
-	visited[i] = 0
+for i in range(1,2):
+	tour_count = recur(i,island,0,0)
 	print (tour_count)
 
